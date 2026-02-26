@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-neon-pink: #ff007f;
+  --color-neon-blue: #00f3ff;
+  --color-neon-yellow: #eaff00;
+
+  --font-sans: var(--font-space-grotesk), system-ui, sans-serif;
+}
+
+/* Base resets & smooth behavior */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Optional: Prevent rubber-band scrolling on iOS to keep flick smooth */
+body {
+  overscroll-behavior-y: none;
+  background-color: #000;
+  color: #fff;
+}
+
+/* 3D Utilities for Coin */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Hide scrollbar for clean app feel */
+::-webkit-scrollbar {
+  display: none;
+}
