@@ -24,8 +24,6 @@ export const setMasterVolume = (v: number) => {
 
 let globalAudioCtx: AudioContext | null = null
 let bgmAudioEl: HTMLAudioElement | null = null
-let bgmTrack: MediaElementAudioSourceNode | null = null
-let bgmGain: GainNode | null = null
 
 const initAudio = () => {
     if (!globalAudioCtx && typeof window !== "undefined") {
@@ -40,35 +38,38 @@ export const resumeAudioContext = () => {
     }
 }
 
-// BGM using HTMLAudioElement with Web Audio API for volume control
+// Pure HTMLAudioElement playback (safest for MP3 looping without Web Audio node chopping)
 export const playAmbientBGM = () => {
     initAudio()
-    if (!globalAudioCtx || masterVolume <= 0) return
+    if (masterVolume <= 0) return
 
     if (!bgmAudioEl) {
         bgmAudioEl = new Audio("/bgm2.mp3")
         bgmAudioEl.loop = true
         bgmAudioEl.crossOrigin = "anonymous"
-
-        bgmTrack = globalAudioCtx.createMediaElementSource(bgmAudioEl)
-
-        bgmGain = globalAudioCtx.createGain()
-        bgmGain.gain.setValueAtTime(0, globalAudioCtx.currentTime)
-
-        bgmTrack.connect(bgmGain)
-        bgmGain.connect(globalAudioCtx.destination)
+        bgmAudioEl.volume = 0 // start at 0 for fade in
     }
 
     if (bgmAudioEl.paused) {
-        bgmGain!.gain.setValueAtTime(0, globalAudioCtx.currentTime)
-        bgmGain!.gain.linearRampToValueAtTime(0.04 * masterVolume, globalAudioCtx.currentTime + 3.0) // 3s fade in
         bgmAudioEl.play().catch(e => console.error("BGM Autoplay prevented", e))
+
+        // Simple manual fade in using setInterval instead of WebAudio param ramping
+        let volParams = { current: 0, target: 0.04 * masterVolume }
+        const fadeInterval = setInterval(() => {
+            if (!bgmAudioEl) return clearInterval(fadeInterval)
+            volParams.current += 0.002
+            if (volParams.current >= volParams.target) {
+                volParams.current = volParams.target
+                clearInterval(fadeInterval)
+            }
+            bgmAudioEl.volume = volParams.current
+        }, 50)
     }
 }
 
 export const updateBGMVolume = (v: number) => {
-    if (bgmGain && globalAudioCtx) {
-        bgmGain.gain.linearRampToValueAtTime(0.04 * v, globalAudioCtx.currentTime + 0.1)
+    if (bgmAudioEl) {
+        bgmAudioEl.volume = 0.04 * v
     }
 }
 
