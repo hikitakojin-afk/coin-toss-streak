@@ -23,7 +23,10 @@ export const setMasterVolume = (v: number) => {
 }
 
 let globalAudioCtx: AudioContext | null = null
-let bgmAudioEl: HTMLAudioElement | null = null
+let bgmBuffer: AudioBuffer | null = null
+let bgmSource: AudioBufferSourceNode | null = null
+let bgmGain: GainNode | null = null
+let isBgmPlaying = false
 
 const initAudio = () => {
     if (!globalAudioCtx && typeof window !== "undefined") {
@@ -38,38 +41,44 @@ export const resumeAudioContext = () => {
     }
 }
 
-// Pure HTMLAudioElement playback (safest for MP3 looping without Web Audio node chopping)
-export const playAmbientBGM = () => {
+// BGM using AudioBufferSourceNode (decodes entire file into RAM for flawless playback without streaming noise)
+export const playAmbientBGM = async () => {
     initAudio()
-    if (masterVolume <= 0) return
+    if (!globalAudioCtx || masterVolume <= 0 || isBgmPlaying) return
 
-    if (!bgmAudioEl) {
-        bgmAudioEl = new Audio("/bgm2.mp3")
-        bgmAudioEl.loop = true
-        bgmAudioEl.crossOrigin = "anonymous"
-        bgmAudioEl.volume = 0 // start at 0 for fade in
-    }
+    try {
+        isBgmPlaying = true // Prevent multiple fetches
 
-    if (bgmAudioEl.paused) {
-        bgmAudioEl.play().catch(e => console.error("BGM Autoplay prevented", e))
+        // 1. Fetch and decode if we haven't already
+        if (!bgmBuffer) {
+            const response = await fetch("/bgm2.mp3")
+            const arrayBuffer = await response.arrayBuffer()
+            bgmBuffer = await globalAudioCtx.decodeAudioData(arrayBuffer)
+        }
 
-        // Simple manual fade in using setInterval instead of WebAudio param ramping
-        let volParams = { current: 0, target: 0.04 * masterVolume }
-        const fadeInterval = setInterval(() => {
-            if (!bgmAudioEl) return clearInterval(fadeInterval)
-            volParams.current += 0.002
-            if (volParams.current >= volParams.target) {
-                volParams.current = volParams.target
-                clearInterval(fadeInterval)
-            }
-            bgmAudioEl.volume = volParams.current
-        }, 50)
+        // 2. Setup the Buffer Source and Gain
+        bgmSource = globalAudioCtx.createBufferSource()
+        bgmSource.buffer = bgmBuffer
+        bgmSource.loop = true
+
+        bgmGain = globalAudioCtx.createGain()
+        bgmGain.gain.setValueAtTime(0, globalAudioCtx.currentTime)
+        bgmGain.gain.linearRampToValueAtTime(0.04 * masterVolume, globalAudioCtx.currentTime + 3.0) // 3s fade in
+
+        // 3. Connect and Play
+        bgmSource.connect(bgmGain)
+        bgmGain.connect(globalAudioCtx.destination)
+        bgmSource.start(0)
+
+    } catch (error) {
+        console.error("Failed to load or play BGM via AudioBuffer", error)
+        isBgmPlaying = false
     }
 }
 
 export const updateBGMVolume = (v: number) => {
-    if (bgmAudioEl) {
-        bgmAudioEl.volume = 0.04 * v
+    if (bgmGain && globalAudioCtx) {
+        bgmGain.gain.linearRampToValueAtTime(0.04 * v, globalAudioCtx.currentTime + 0.1)
     }
 }
 
