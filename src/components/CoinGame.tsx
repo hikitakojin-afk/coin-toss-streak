@@ -47,17 +47,11 @@ export const resumeAudioContext = () => {
     }
 }
 
-export const playSound = (type: 'clink' | 'success' | 'heartbeat', vol: number = 1.0) => {
+export const playSound = (type: 'heartbeat', vol: number = 1.0) => {
     if (masterVolume <= 0) return
 
     let audioEl: HTMLAudioElement | null = null
-    if (type === 'clink') {
-        if (!clinkAudioEl) clinkAudioEl = new Audio("/clink.mp3")
-        audioEl = clinkAudioEl
-    } else if (type === 'success') {
-        if (!successAudioEl) successAudioEl = new Audio("/success.mp3")
-        audioEl = successAudioEl
-    } else if (type === 'heartbeat') {
+    if (type === 'heartbeat') {
         if (!heartbeatAudioEl) heartbeatAudioEl = new Audio("/heartbeat.mp3")
         audioEl = heartbeatAudioEl
     }
@@ -110,15 +104,56 @@ export const updateBGMVolume = (v: number) => {
     }
 }
 
-// No longer using AudioContext for metallic/heartbeat sounds, using HTMLAudioElement via playSound
-// Keeping these functions as stubs or for future re-implementation if needed.
-const playMetallicSound = (baseFreq: number, duration: number, isWin: boolean = false, isHeavy: boolean = false) => {
-    // Replaced by playSound('clink') or playSound('success')
+// Restored Metallic Sound Synthesizer via Web Audio API (creates sound in-browser)
+export const playMetallicSound = (baseFreq: number, duration: number, isWin: boolean = false, isHeavy: boolean = false, rawVolume: number = 1.0) => {
+    if (!globalAudioCtx || masterVolume <= 0) return
+    const ctx = globalAudioCtx
+    const t = ctx.currentTime
+
+    const osc1 = ctx.createOscillator()
+    const osc2 = ctx.createOscillator()
+    const osc3 = ctx.createOscillator()
+
+    const gainNode = ctx.createGain()
+    const filter = ctx.createBiquadFilter()
+
+    osc1.type = isHeavy ? "square" : "sine"
+    osc2.type = "sine"
+    osc3.type = "triangle"
+
+    const highPitchMult = 1.5;
+
+    osc1.frequency.setValueAtTime(baseFreq * highPitchMult, t)
+    osc2.frequency.setValueAtTime(baseFreq * 2.76 * highPitchMult, t)
+    osc3.frequency.setValueAtTime(baseFreq * 5.4 * highPitchMult, t)
+
+    const peakVolume = (isWin ? 0.3 : (isHeavy ? 0.5 : 0.4)) * masterVolume * Math.min(rawVolume, 1.0)
+
+    gainNode.gain.setValueAtTime(0, t)
+    gainNode.gain.linearRampToValueAtTime(peakVolume, t + 0.01)
+    gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration)
+
+    filter.type = "bandpass"
+    filter.frequency.setValueAtTime(baseFreq * 2 * highPitchMult, t)
     if (isWin) {
-        playSound('success', 1.0)
+        filter.frequency.linearRampToValueAtTime(baseFreq * 4 * highPitchMult, t + 0.5)
     } else {
-        playSound('clink', isHeavy ? 0.8 : 0.6)
+        filter.frequency.linearRampToValueAtTime(baseFreq * 0.5 * highPitchMult, t + 0.5)
     }
+    filter.Q.value = 8
+
+    osc1.connect(gainNode)
+    osc2.connect(gainNode)
+    osc3.connect(gainNode)
+    gainNode.connect(filter)
+    filter.connect(ctx.destination)
+
+    osc1.start(t)
+    osc2.start(t)
+    osc3.start(t)
+    osc1.stop(t + duration)
+    osc2.stop(t + duration)
+    osc3.stop(t + duration)
 }
 
 const stopHeartbeatSound = () => {
@@ -278,7 +313,7 @@ function CoinMesh({
                     } else {
                         // Calculate volume strictly based on impact force. Normalize max impact to ~15.
                         let rawVolume = Math.min(impactVelocity / 15, 1.0); // Maps velocity range 0-15 directly to 0-1.0
-                        playSound('clink', rawVolume);
+                        playMetallicSound(1200, 0.2, false, false, rawVolume);
                     }
 
                     // Slow-Mo multiple of 5 trigger on first bounce
