@@ -46,7 +46,7 @@ export const playAmbientBGM = () => {
     if (!globalAudioCtx || masterVolume <= 0) return
 
     if (!bgmAudioEl) {
-        bgmAudioEl = new Audio("/bgm.mp4")
+        bgmAudioEl = new Audio("/bgm2.mp3")
         bgmAudioEl.loop = true
         bgmAudioEl.crossOrigin = "anonymous"
 

@@ -250,29 +250,29 @@ export default function Home() {
       <div id="share-capture-zone" className="absolute inset-0 pointer-events-none flex flex-col items-center justify-between z-10">
 
         {/* Header / Scoreboard */}
-        <header className="w-full p-6 flex flex-col items-center z-50 mt-24 md:mt-20 pointer-events-none relative">
-          <div className="flex justify-center w-full px-4 mb-4">
-            <div className="flex flex-col items-center bg-black/40 px-6 py-2 rounded-full border border-amber-500/20 backdrop-blur-md">
-              <span className="text-[10px] uppercase tracking-widest text-amber-300/70 drop-shadow-md">
+        <header className="w-full p-2 md:p-6 flex flex-col items-center z-50 mt-16 md:mt-20 pointer-events-none relative">
+          <div className="flex justify-center w-full px-2 md:px-4 mb-2 md:mb-4">
+            <div className="flex flex-col items-center bg-black/40 px-4 md:px-6 py-1 md:py-2 rounded-full border border-amber-500/20 backdrop-blur-md">
+              <span className="text-[8px] md:text-[10px] uppercase tracking-widest text-amber-300/70 drop-shadow-md">
                 {lang === "ja" ? "ハイスコア" : "High Score"}
               </span>
-              <span className="text-xl font-black drop-shadow-lg text-amber-100">{highScore}</span>
+              <span className="text-base md:text-xl font-black drop-shadow-lg text-amber-100">{highScore}</span>
             </div>
           </div>
 
-          {/* Streak Layout (Updated layout as requested) */}
-          <div className="flex flex-col items-center relative w-full px-4 mt-2">
+          {/* Streak Layout */}
+          <div className="flex flex-col items-center relative w-full px-2 md:px-4 mt-1 md:mt-2">
 
             <div className="flex flex-col items-center">
               {/* 1. Label strictly placed above */}
-              <span className="text-sm md:text-base uppercase tracking-[0.2em] font-bold text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-2 bg-black/50 px-6 py-1 rounded-full border border-amber-500/30 backdrop-blur-md select-none">
+              <span className="text-[10px] md:text-base uppercase tracking-widest md:tracking-[0.2em] font-bold text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-1 md:mb-2 bg-black/50 px-4 md:px-6 py-0.5 md:py-1 rounded-full border border-amber-500/30 backdrop-blur-md select-none">
                 {lang === "ja" ? "現在のストリーク" : "Current Streak"}
               </span>
 
               {/* 2. Streak Number strictly below the label with a relative wrapper */}
               <div className="relative flex items-center justify-center">
                 <h1 className={cn(
-                  "text-[8rem] md:text-[10rem] leading-none font-black tabular-nums tracking-tighter transition-all duration-300 text-amber-300 drop-shadow-[0_0_40px_rgba(251,191,36,0.6)] select-none",
+                  "text-[4rem] md:text-[10rem] leading-none font-black tabular-nums tracking-tighter transition-all duration-300 text-amber-300 drop-shadow-[0_0_20px_rgba(251,191,36,0.6)] md:drop-shadow-[0_0_40px_rgba(251,191,36,0.6)] select-none",
                   streak > 0 && streak % 10 === 0 ? "scale-110" : "scale-100"
                 )}>
                   {streak}
@@ -280,8 +280,8 @@ export default function Home() {
 
                 {/* 3. Small Target Coin Badge placed at the top-right of the number */}
                 {targetSide && streak > 0 && (
-                  <div className="absolute top-2 right-0 translate-x-[90%] md:translate-x-[110%] animate-in fade-in zoom-in slide-in-from-left-4">
-                    <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-amber-400 overflow-hidden shadow-[0_0_25px_rgba(251,191,36,0.6)]">
+                  <div className="absolute top-1 md:top-2 right-0 translate-x-[90%] md:translate-x-[110%] animate-in fade-in zoom-in slide-in-from-left-4">
+                    <div className="relative w-8 h-8 md:w-16 md:h-16 rounded-full border-2 md:border-4 border-amber-400 overflow-hidden shadow-[0_0_15px_rgba(251,191,36,0.6)] md:shadow-[0_0_25px_rgba(251,191,36,0.6)]">
                       <Image
                         src={targetSide === 'heads' ? '/textures/heads.png' : '/textures/tails.png'}
                         alt={targetSide}
@@ -333,20 +333,20 @@ export default function Home() {
 
         {/* Probability Info (Bottom Screen) */}
         {probInfo && (
-          <div className="absolute bottom-10 py-6 left-0 right-0 flex flex-col items-center pointer-events-none z-20 px-4 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
-            <div className="bg-black/60 backdrop-blur-md border border-amber-500/30 px-6 py-5 rounded-2xl w-full max-w-md flex flex-col items-center gap-3 shadow-2xl transition-all">
-              <span className="text-amber-400/80 text-xs tracking-widest uppercase font-semibold border-b border-amber-500/30 pb-1">
+          <div className="absolute bottom-4 md:bottom-10 py-2 md:py-6 left-0 right-0 flex flex-col items-center pointer-events-none z-20 px-2 md:px-4 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
+            <div className="bg-black/60 backdrop-blur-md border border-amber-500/30 px-4 md:px-6 py-3 md:py-5 rounded-xl md:rounded-2xl w-full max-w-md md:max-w-md flex flex-col items-center gap-1 md:gap-3 shadow-2xl transition-all">
+              <span className="text-amber-400/80 text-[10px] md:text-xs tracking-widest uppercase font-semibold border-b border-amber-500/30 pb-1">
                 {lang === "ja" ? "連続成功の確率" : "Probability"}
               </span>
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-black text-amber-300 tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]">
+              <div className="flex items-baseline gap-2 md:gap-3">
+                <span className="text-xl md:text-4xl font-black text-amber-300 tracking-tighter tabular-nums drop-shadow-[0_0_10px_rgba(251,191,36,0.6)] md:drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]">
                   {probInfo.probPercent}%
                 </span>
-                <span className="text-amber-100 font-mono text-sm tabular-nums">
+                <span className="text-amber-100 font-mono text-xs md:text-sm tabular-nums">
                   ({probInfo.formattedFraction})
                 </span>
               </div>
-              <div className="text-amber-200/90 text-sm md:text-base text-center mt-1 leading-relaxed w-full font-medium bg-amber-950/40 p-3 rounded-xl border border-amber-500/20 shadow-inner">
+              <div className="text-amber-200/90 text-xs md:text-base text-center mt-0 md:mt-1 leading-snug md:leading-relaxed w-full font-medium bg-amber-950/40 p-2 md:p-3 rounded-lg md:rounded-xl border border-amber-500/20 shadow-inner">
                 {probInfo.example}
               </div>
             </div>
