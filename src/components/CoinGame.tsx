@@ -23,7 +23,8 @@ export const setMasterVolume = (v: number) => {
 }
 
 let globalAudioCtx: AudioContext | null = null
-let bgmOsc: OscillatorNode | null = null
+let bgmAudioEl: HTMLAudioElement | null = null
+let bgmTrack: MediaElementAudioSourceNode | null = null
 let bgmGain: GainNode | null = null
 
 const initAudio = () => {
@@ -39,44 +40,35 @@ export const resumeAudioContext = () => {
     }
 }
 
-// Procedural Ambient BGM Loop
+// BGM using HTMLAudioElement with Web Audio API for volume control
 export const playAmbientBGM = () => {
     initAudio()
-    if (!globalAudioCtx || bgmOsc || masterVolume <= 0) return
-    const ctx = globalAudioCtx
+    if (!globalAudioCtx || masterVolume <= 0) return
 
-    bgmOsc = ctx.createOscillator()
-    bgmOsc.type = "sine"
-    bgmOsc.frequency.setValueAtTime(55, ctx.currentTime) // Low A1 for drone
+    if (!bgmAudioEl) {
+        bgmAudioEl = new Audio("/bgm.mp4")
+        bgmAudioEl.loop = true
+        bgmAudioEl.crossOrigin = "anonymous"
 
-    // Add slow modulation to the frequency
-    const lfo = ctx.createOscillator()
-    lfo.type = "sine"
-    lfo.frequency.setValueAtTime(0.1, ctx.currentTime) // 10 sec period
-    const lfoGain = ctx.createGain()
-    lfoGain.gain.setValueAtTime(5, ctx.currentTime) // +/- 5Hz
-    lfo.connect(lfoGain)
-    lfoGain.connect(bgmOsc.frequency)
-    lfo.start()
+        bgmTrack = globalAudioCtx.createMediaElementSource(bgmAudioEl)
 
-    bgmGain = ctx.createGain()
-    bgmGain.gain.setValueAtTime(0, ctx.currentTime)
-    bgmGain.gain.linearRampToValueAtTime(0.1 * masterVolume, ctx.currentTime + 3.0) // 3s fade in
+        bgmGain = globalAudioCtx.createGain()
+        bgmGain.gain.setValueAtTime(0, globalAudioCtx.currentTime)
 
-    const filter = ctx.createBiquadFilter()
-    filter.type = "lowpass"
-    filter.frequency.setValueAtTime(150, ctx.currentTime)
+        bgmTrack.connect(bgmGain)
+        bgmGain.connect(globalAudioCtx.destination)
+    }
 
-    bgmOsc.connect(filter)
-    filter.connect(bgmGain)
-    bgmGain.connect(ctx.destination)
-
-    bgmOsc.start()
+    if (bgmAudioEl.paused) {
+        bgmGain!.gain.setValueAtTime(0, globalAudioCtx.currentTime)
+        bgmGain!.gain.linearRampToValueAtTime(0.04 * masterVolume, globalAudioCtx.currentTime + 3.0) // 3s fade in
+        bgmAudioEl.play().catch(e => console.error("BGM Autoplay prevented", e))
+    }
 }
 
 export const updateBGMVolume = (v: number) => {
     if (bgmGain && globalAudioCtx) {
-        bgmGain.gain.linearRampToValueAtTime(0.1 * v, globalAudioCtx.currentTime + 0.1)
+        bgmGain.gain.linearRampToValueAtTime(0.04 * v, globalAudioCtx.currentTime + 0.1)
     }
 }
 
@@ -265,11 +257,11 @@ function CoinMesh({
 
     // Ultra high glossy, emissive gold material for spotlight reflection
     const matProps = useMemo(() => ({
-        color: "#ffd700",
+        color: "#ffffff",
         metalness: 1.0,
-        roughness: 0.1,
-        emissive: "#b39100",
-        emissiveIntensity: 0.7,
+        roughness: 0.05,
+        emissive: "#ddb300",
+        emissiveIntensity: 1.0,
         toneMapped: false
     }), [])
 
@@ -506,7 +498,7 @@ export function CoinGame({ onStreakUpdate, streak, targetSide, onTossStarted }: 
             >
 
                 {/* Dramatic Indoor Spotlight - Widened */}
-                <ambientLight intensity={0.1} color="#111" />
+                <ambientLight intensity={0.5} color="#ffffff" />
                 <spotLight
                     position={[0, 15, 0]}
                     angle={0.8}
@@ -516,7 +508,7 @@ export function CoinGame({ onStreakUpdate, streak, targetSide, onTossStarted }: 
                     castShadow
                     shadow-mapSize={[512, 512]}
                 />
-                <pointLight position={[0, 2, 0]} intensity={2.5} color="#ffe066" distance={10} />
+                <pointLight position={[0, 2, 0]} intensity={3.5} color="#ffe066" distance={10} />
 
                 <Suspense fallback={null}>
                     <Physics gravity={[0, -30, 0]} paused={true}>
