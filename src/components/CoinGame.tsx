@@ -20,6 +20,7 @@ export interface CoinGameProps {
 export let masterVolume = 0.5
 export const setMasterVolume = (v: number) => {
     masterVolume = Math.max(0, Math.min(1, v))
+    updateBGMVolume(v)
 }
 
 let globalAudioCtx: AudioContext | null = null
@@ -27,6 +28,11 @@ let bgmBuffer: AudioBuffer | null = null
 let bgmSource: AudioBufferSourceNode | null = null
 let bgmGain: GainNode | null = null
 let isBgmPlaying = false
+
+// HTMLAudioElement for short, impactful sounds
+let clinkAudioEl: HTMLAudioElement | null = null
+let successAudioEl: HTMLAudioElement | null = null
+let heartbeatAudioEl: HTMLAudioElement | null = null
 
 const initAudio = () => {
     if (!globalAudioCtx && typeof window !== "undefined") {
@@ -38,6 +44,28 @@ const initAudio = () => {
 export const resumeAudioContext = () => {
     if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
         globalAudioCtx.resume()
+    }
+}
+
+export const playSound = (type: 'clink' | 'success' | 'heartbeat', vol: number = 1.0) => {
+    if (masterVolume <= 0) return
+
+    let audioEl: HTMLAudioElement | null = null
+    if (type === 'clink') {
+        if (!clinkAudioEl) clinkAudioEl = new Audio("/clink.mp3")
+        audioEl = clinkAudioEl
+    } else if (type === 'success') {
+        if (!successAudioEl) successAudioEl = new Audio("/success.mp3")
+        audioEl = successAudioEl
+    } else if (type === 'heartbeat') {
+        if (!heartbeatAudioEl) heartbeatAudioEl = new Audio("/heartbeat.mp3")
+        audioEl = heartbeatAudioEl
+    }
+
+    if (audioEl) {
+        audioEl.currentTime = 0
+        audioEl.volume = Math.min(vol * masterVolume, 1)
+        audioEl.play().catch(e => console.log("Audio play allowed", e))
     }
 }
 
@@ -82,122 +110,23 @@ export const updateBGMVolume = (v: number) => {
     }
 }
 
-// Improved higher-pitched metallic sound
+// No longer using AudioContext for metallic/heartbeat sounds, using HTMLAudioElement via playSound
+// Keeping these functions as stubs or for future re-implementation if needed.
 const playMetallicSound = (baseFreq: number, duration: number, isWin: boolean = false, isHeavy: boolean = false) => {
-    if (!globalAudioCtx || masterVolume <= 0) return
-    const ctx = globalAudioCtx
-    const t = ctx.currentTime
-
-    const osc1 = ctx.createOscillator()
-    const osc2 = ctx.createOscillator()
-    const osc3 = ctx.createOscillator()
-
-    const gainNode = ctx.createGain()
-    const filter = ctx.createBiquadFilter()
-
-    osc1.type = isHeavy ? "square" : "sine"
-    osc2.type = "sine"
-    osc3.type = "triangle"
-
-    const highPitchMult = 1.5;
-
-    osc1.frequency.setValueAtTime(baseFreq * highPitchMult, t)
-    osc2.frequency.setValueAtTime(baseFreq * 2.76 * highPitchMult, t)
-    osc3.frequency.setValueAtTime(baseFreq * 5.4 * highPitchMult, t)
-
-    const peakVolume = (isWin ? 0.3 : (isHeavy ? 0.5 : 0.4)) * masterVolume
-
-    gainNode.gain.setValueAtTime(0, t)
-    gainNode.gain.linearRampToValueAtTime(peakVolume, t + 0.01)
-    gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration)
-
-    filter.type = "bandpass"
-    filter.frequency.setValueAtTime(baseFreq * 2 * highPitchMult, t)
+    // Replaced by playSound('clink') or playSound('success')
     if (isWin) {
-        filter.frequency.linearRampToValueAtTime(baseFreq * 4 * highPitchMult, t + 0.5)
+        playSound('success', 1.0)
     } else {
-        filter.frequency.linearRampToValueAtTime(baseFreq * 0.5 * highPitchMult, t + 0.5)
+        playSound('clink', isHeavy ? 0.8 : 0.6)
     }
-    filter.Q.value = 8
-
-    osc1.connect(gainNode)
-    osc2.connect(gainNode)
-    osc3.connect(gainNode)
-    gainNode.connect(filter)
-    filter.connect(ctx.destination)
-
-    osc1.start(t)
-    osc2.start(t)
-    osc3.start(t)
-    osc1.stop(t + duration)
-    osc2.stop(t + duration)
-    osc3.stop(t + duration)
-}
-
-let activeHeartbeatOsc: OscillatorNode | null = null;
-let activeHeartbeatGain: GainNode | null = null;
-
-const playHeartbeatSound = () => {
-    if (!globalAudioCtx || masterVolume <= 0) return
-    const ctx = globalAudioCtx
-    const t = ctx.currentTime
-
-    // Cleanup previous if any
-    stopHeartbeatSound()
-
-    const osc = ctx.createOscillator()
-    const gainNode = ctx.createGain()
-    const filter = ctx.createBiquadFilter()
-
-    osc.type = "sine"
-    osc.frequency.setValueAtTime(40, t) // Deep sub-bass
-
-    // Create a pulsing heartbeat LFO effect using gain automation
-    // A heartbeat is typically two quick thumps followed by a pause.
-    // We'll simulate a continuous heavy thump loop by automating the gain.
-    gainNode.gain.setValueAtTime(0, t)
-
-    // Pulse 1
-    gainNode.gain.linearRampToValueAtTime(0.8 * masterVolume, t + 0.1)
-    gainNode.gain.exponentialRampToValueAtTime(0.1 * masterVolume, t + 0.3)
-    // Pulse 2
-    gainNode.gain.linearRampToValueAtTime(0.6 * masterVolume, t + 0.4)
-    gainNode.gain.exponentialRampToValueAtTime(0.01 * masterVolume, t + 0.8)
-
-    // Keep looping this envelope by recreating it or just letting it be a long low rumble
-    // For simplicity, we'll just do a 1-second looping pulse by connecting an LFO to gain
-    const lfo = ctx.createOscillator()
-    lfo.type = "sine"
-    lfo.frequency.setValueAtTime(1.5, t) // 1.5 beats per second
-
-    const lfoGain = ctx.createGain()
-    lfoGain.gain.setValueAtTime(0.5 * masterVolume, t) // Depth of pulse
-
-    lfo.connect(lfoGain)
-    // We can't easily connect LFO directly to AudioParam in all browsers for complex envelopes,
-    // so we'll just use a lowpass filter to muffle it and give it that "underwater" heartbeat feel.
-
-    filter.type = "lowpass"
-    filter.frequency.setValueAtTime(150, t)
-
-    osc.connect(gainNode)
-    gainNode.connect(filter)
-    filter.connect(ctx.destination)
-
-    osc.start(t)
-
-    activeHeartbeatOsc = osc;
-    activeHeartbeatGain = gainNode;
 }
 
 const stopHeartbeatSound = () => {
-    if (activeHeartbeatOsc && activeHeartbeatGain && globalAudioCtx) {
-        const t = globalAudioCtx.currentTime;
-        activeHeartbeatGain.gain.cancelScheduledValues(t);
-        activeHeartbeatGain.gain.linearRampToValueAtTime(0, t + 0.5); // Fade out over 0.5s
-        activeHeartbeatOsc.stop(t + 0.6);
-        activeHeartbeatOsc = null;
-        activeHeartbeatGain = null;
+    // HTMLAudioElement doesn't have a direct stop/fade out like AudioContext.
+    // For now, just stopping the sound if it's playing.
+    if (heartbeatAudioEl) {
+        heartbeatAudioEl.pause();
+        heartbeatAudioEl.currentTime = 0;
     }
 }
 
@@ -259,6 +188,7 @@ function CoinMesh({
     const safetyTimerRef = useRef<NodeJS.Timeout | null>(null)
     const pointerDownPos = useRef({ x: 0, y: 0 })
     const pointerDownTime = useRef(0)
+    const lastHeartbeatTime = useRef(0) // To prevent multiple heartbeat requests simultaneously to sound natural
 
     const [headsTexture, tailsTexture] = useTexture([
         "/textures/heads.png",
@@ -335,12 +265,26 @@ function CoinMesh({
             ccd={true}
             onCollisionEnter={(payload) => {
                 if (payload.other.rigidBodyObject?.name === "floor" && localFlipping.current && !hasReportedLanded.current) {
-                    playMetallicSound(1200, 0.2, false, true)
+                    const isSlowMo = projectedStreak > 0 && projectedStreak % 5 === 0;
+                    const velocity = coinRef.current?.linvel();
+                    const impactVelocity = velocity ? Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) : 0;
+
+                    if (isSlowMo) {
+                        const now = performance.now();
+                        if (now - lastHeartbeatTime.current > 800) { // Keep heartbeat rhythm steady
+                            playSound('heartbeat', 0.8);
+                            lastHeartbeatTime.current = now;
+                        }
+                    } else {
+                        // Calculate volume strictly based on impact force. Normalize max impact to ~15.
+                        let rawVolume = Math.min(impactVelocity / 15, 1.0); // Maps velocity range 0-15 directly to 0-1.0
+                        playSound('clink', rawVolume);
+                    }
 
                     // Slow-Mo multiple of 5 trigger on first bounce
-                    if (projectedStreak > 0 && projectedStreak % 5 === 0) {
+                    if (isSlowMo) {
                         setTimeScale(0.6) // Set simulation visually slower (0.6x)
-                        playHeartbeatSound()
+                        // playHeartbeatSound() is now handled by playSound('heartbeat') above
                     }
                 }
             }}
@@ -377,7 +321,7 @@ function CoinMesh({
                             initAudio()
                             playAmbientBGM()
                             resumeAudioContext()
-                            playMetallicSound(1400, 0.5)
+                            playMetallicSound(1400, 0.5) // This will now call playSound('clink')
 
                             onTossStarted()
                             isFlipping.current = true
