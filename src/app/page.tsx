@@ -232,7 +232,7 @@ export default function Home() {
   const probInfo = getProbabilityInfo(streak, lang)
 
   return (
-    <main className="min-h-[100dvh] w-full flex flex-col items-center justify-between text-yellow-100 uppercase overflow-hidden relative bg-[#0a0600]" onClick={handleTossStarted}>
+    <main className="min-h-[100dvh] w-full flex flex-col items-center justify-between text-yellow-100 uppercase overflow-hidden relative bg-[#0a0600] touch-none select-none" onClick={handleTossStarted}>
 
       {/* Removed Audio Tag, using Web Audio API instead */}
 
@@ -250,7 +250,7 @@ export default function Home() {
       <div id="share-capture-zone" className="absolute inset-0 pointer-events-none flex flex-col items-center justify-between z-10">
 
         {/* Header / Scoreboard */}
-        <header className="w-full p-6 flex flex-col items-center z-50 mt-20 pointer-events-none relative">
+        <header className="w-full p-6 flex flex-col items-center z-50 mt-24 md:mt-20 pointer-events-none relative">
           <div className="flex justify-center w-full px-4 mb-4">
             <div className="flex flex-col items-center bg-black/40 px-6 py-2 rounded-full border border-amber-500/20 backdrop-blur-md">
               <span className="text-[10px] uppercase tracking-widest text-amber-300/70 drop-shadow-md">
@@ -295,8 +295,8 @@ export default function Home() {
 
             </div>
 
-            {/* Debug Controls */}
-            {process.env.NODE_ENV !== "production" && (
+            {/* Debug Controls - Hidden */}
+            {false && (
               <div className="absolute top-10 right-4 translate-y-24 z-50 pointer-events-auto flex flex-col gap-2 pointer-events-auto">
                 <button
                   onClick={() => handleStreakUpdate(streak + 1, targetSide || "heads")}
@@ -354,48 +354,51 @@ export default function Home() {
         )}
       </div>
 
-      {/* Top Left Volume Controls - Hidden during capture */}
+      {/* Top Controls Overlay - Responsive & non-overlapping */}
       {!isCapturing && (
-        <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-black/50 backdrop-blur-md px-4 py-3 rounded-full border border-amber-500/30 w-48 shadow-lg pointer-events-auto" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
-          <span className="text-xl leading-none">{volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊"}</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={handleVolumeChange}
-            className="w-full accent-amber-500 cursor-pointer"
-          />
-        </div>
-      )}
+        <div className="absolute top-4 left-0 right-0 w-full px-4 md:px-6 z-50 flex justify-between items-start pointer-events-none">
+          {/* Top Left Group: Volume & Meta */}
+          <div className="flex gap-2 pointer-events-auto flex-wrap sm:flex-nowrap max-w-[60%] select-none">
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-full border border-amber-500/30 w-24 sm:w-36 shadow-lg h-10">
+              <span className="text-sm sm:text-lg leading-none shrink-0">{volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊"}</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-full min-w-[30px] accent-amber-500 cursor-pointer h-1"
+              />
+            </div>
+            <button
+              onClick={openLeaderboard}
+              className="bg-black/60 hover:bg-black/80 backdrop-blur-md border border-amber-500/30 text-amber-100 rounded-full font-bold flex items-center justify-center transition-all shadow-lg active:scale-95 text-sm sm:text-lg w-10 h-10 shrink-0 cursor-pointer"
+            >
+              🏆
+            </button>
+            <button
+              onClick={() => setLang(l => l === "en" ? "ja" : "en")}
+              className="bg-black/60 hover:bg-black/80 backdrop-blur-md border border-amber-500/30 text-amber-100 rounded-full font-bold flex items-center justify-center transition-all shadow-lg active:scale-95 text-[10px] sm:text-xs w-10 h-10 shrink-0 cursor-pointer uppercase tracking-wider"
+            >
+              {lang}
+            </button>
+          </div>
 
-      {/* Top Right UI Controls - Hidden during capture */}
-      {!isCapturing && (
-        <div className="absolute top-6 right-6 z-50 flex gap-4 pointer-events-auto" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
-          <button
-            onClick={openLeaderboard}
-            className="bg-black/60 hover:bg-black/80 backdrop-blur-md border border-amber-500/30 text-amber-100 px-3 py-2 rounded-full font-bold flex items-center justify-center transition-all shadow-lg active:scale-95 text-xl w-12 h-10 cursor-pointer"
-          >
-            🏆
-          </button>
-          <button
-            onClick={() => setLang(l => l === "en" ? "ja" : "en")}
-            className="bg-black/60 hover:bg-black/80 backdrop-blur-md border border-amber-500/30 text-amber-100 px-3 py-2 rounded-full font-bold flex items-center justify-center transition-all shadow-lg active:scale-95 text-xs w-12 h-10 cursor-pointer uppercase tracking-wider"
-          >
-            {lang}
-          </button>
-          <button
-            onClick={handleShareClick}
-            className="bg-amber-600/20 hover:bg-amber-600/40 backdrop-blur-md border border-amber-500/40 text-amber-100 px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 text-sm cursor-pointer"
-          >
-            {isCapturing ? (lang === "ja" ? "処理中..." : "Processing...") : (
-              <>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                {lang === "ja" ? "スクショしてシェア" : "Share Screenshot"}
-              </>
-            )}
-          </button>
+          {/* Top Right Group: Share */}
+          <div className="pointer-events-auto select-none shrink-0 border border-amber-500/0">
+            <button
+              onClick={handleShareClick}
+              className="bg-amber-600/30 hover:bg-amber-600/50 backdrop-blur-md border border-amber-500/50 text-amber-100 px-3 py-0 h-10 rounded-full font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-95 text-[10px] sm:text-sm cursor-pointer whitespace-nowrap"
+            >
+              {isCapturing ? (lang === "ja" ? "処理中..." : "Processing...") : (
+                <>
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 sm:w-4 sm:h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                  {lang === "ja" ? "スクショしてシェア" : "Share"}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
@@ -444,10 +447,11 @@ export default function Home() {
               <div className="flex items-center justify-between w-full"> {/* Added w-full here */}
                 <h2 className="text-xl font-black text-amber-300 flex items-center gap-2">🏆 {lang === "ja" ? "リーダーボード" : "Leaderboard"}</h2>
                 <div className="flex items-center gap-2">
-                  {process.env.NODE_ENV !== "production" && (
+                  {false && process.env.NODE_ENV !== "production" && (
                     <button
                       onClick={async () => {
                         await fetch('/api/leaderboard', { method: 'DELETE' });
+
                         openLeaderboard(); // refresh UI
                       }}
                       className="text-xs bg-red-900/40 hover:bg-red-800 text-red-200 px-3 py-1 rounded transition-colors mr-2 border border-red-500/50"
