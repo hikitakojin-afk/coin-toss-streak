@@ -153,7 +153,7 @@ export default function Home() {
     const text = lang === "ja"
       ? `コイントスチャレンジで${displayScore}回連続成功！🪙 あなたはこれを超えられるかな？ トップランカー目指して挑戦しよう！`
       : `I got a ${displayScore} streak in the Coin Toss Challenge! 🪙 Can you beat me?`;
-    const url = "https://your-deployment-url.vercel.app"
+    const url = "https://coin-toss-streak.vercel.app"
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
 
     // Only attempt native image sharing with screenshot if we are on a Mobile device where the share sheet is reliable.
